@@ -27,7 +27,7 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     // Variables
-    TextView textView, addressView;
+    TextView textView, addressView, distanceTo;
 
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast"})
@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         // Variables
         textView = findViewById(R.id.textView);
         addressView = findViewById(R.id.addressView);
+        distanceTo = findViewById(R.id.distanceTo);
 
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -70,14 +71,12 @@ public class MainActivity extends AppCompatActivity {
 
 
                 // Display Location to Phone
-                textView.setText(latitude + " " + longitude);
+                textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
                 Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-                Toast toast = Toast.makeText(getApplicationContext(), "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_LONG);
-                toast.show();
 
 
                 // Display Address
-                addressView.setText((CharSequence) getAddy((LocationListener) getApplicationContext(), latitude,longitude));
+                addressView.setText("Address: " + getAddy(latitude,longitude));
 
 
 
@@ -107,13 +106,28 @@ public class MainActivity extends AppCompatActivity {
                 double longitude = location.getLongitude();
                 Log.d("TAG","Latitude: " + latitude + "\nLongitude: " + longitude);
 
-                // Display to Phone
-                Toast toast = Toast.makeText(getApplicationContext(), "LOCATION CHANGED " + "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_LONG);
-                textView.setText(latitude + " " + longitude);
+                /*
+                 Display to Phone
+                 Toast toast = Toast.makeText(getApplicationContext(), "LOCATION CHANGED " + "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_SHORT);
                 toast.show();
+                */
+
+                textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+
 
                 // Display Address to phone
-                addressView.setText((CharSequence) getAddy(this, latitude,longitude));
+                Location newYorkCity = new Location("New York City");
+                newYorkCity.setLatitude(40.7128);
+                newYorkCity.setLongitude(-74.0060);
+
+                addressView.setText((CharSequence) getAddy( latitude,longitude));
+
+
+                // Calculating Distance to my house
+                distanceTo.setText("Distance to New York City: "+ location.distanceTo(newYorkCity));
+
+
+
 
             }
             @Override
@@ -130,35 +144,40 @@ public class MainActivity extends AppCompatActivity {
             public void onStatusChanged(String provider, int status, Bundle extras) {
 
             }
-
         };
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
 
     }
 
-
-    public Address getAddy(LocationListener context, double latitude, double longitude){
-
-        //TODO: FIX  ERRORS WITH RETRIEVING ADDRESS
-
-        Geocoder geocoder = new Geocoder((Context) context, Locale.getDefault());
-        List<Address> addresses = null;
+    public String getAddy(double latitude, double longitude) {
+        Geocoder geocoder;
+        List<Address> addresses;
+        geocoder = new Geocoder(this, Locale.getDefault());
 
         try {
-            addresses = geocoder.getFromLocation(latitude, longitude, 1);
+            addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+            String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+            String city = addresses.get(0).getLocality();
+            String state = addresses.get(0).getAdminArea();
+            String country = addresses.get(0).getCountryName();
+            String postalCode = addresses.get(0).getPostalCode();
+            String knownName = addresses.get(0).getFeatureName(); // Only if available else return NULL
+
+            return address + ", " + city + ", " + state + ", " + country + ", " + postalCode + ", " + knownName;
         } catch (IOException e) {
             e.printStackTrace();
-        }
-
-        if (addresses != null && addresses.size() > 0) {
-            return addresses.get(0);
-        } else {
-            return null;
+            return "";
         }
     }
 }
 
 
-//TODO: Steps 6 - 9
+// To Do List
+    //TODO: Register and deregister the location listener on rotating change
+    //TODO: Step 9
+    //TODO: clean up code
+    //TODO: Make display neatly
+    //TODO: Add factor
