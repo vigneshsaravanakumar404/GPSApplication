@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
     public Address getAddy(LocationListener context, double latitude, double longitude){
 
-        //TODO: FIX ERRORS WITH RETRIEVING ADDRESS
+        //TODO: FIX  ERRORS WITH RETRIEVING ADDRESS
 
         Geocoder geocoder = new Geocoder((Context) context, Locale.getDefault());
         List<Address> addresses = null;
