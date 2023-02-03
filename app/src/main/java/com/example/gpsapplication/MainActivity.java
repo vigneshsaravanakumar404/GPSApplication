@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat;
 
 import android.location.Address;
 import android.location.Geocoder;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -28,10 +29,17 @@ public class MainActivity extends AppCompatActivity {
 
     // Variables
     TextView textView, addressView, distanceTo;
+    LocationManager locationManager;
+    LocationListener locationListener;
+    double tempLat, tempLong, distanceTravelled;
+    Location tempLocation;
+    boolean first = true;
 
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast"})
     @Override
+
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -55,8 +63,8 @@ public class MainActivity extends AppCompatActivity {
         locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
 
 
-        // Creating Location Listener and display Location as it is updated
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        // Useless Code
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
@@ -68,16 +76,13 @@ public class MainActivity extends AppCompatActivity {
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
 
-
-
                 // Display Location to Phone
                 textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
                 Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
 
 
                 // Display Address
-                addressView.setText("Address: " + getAddy(latitude,longitude));
-
+                addressView.setText("Address: " + getAddy(latitude, longitude));
 
 
             }
@@ -97,14 +102,36 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        LocationListener locationListener = new LocationListener() {
+
+
+
+
+        // Useful Code
+        locationListener = new LocationListener() {
             @SuppressLint("SetTextI18n")
             @Override
             public void onLocationChanged(@NonNull Location location) {
                 // Get latitude and longitude and display it
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
-                Log.d("TAG","Latitude: " + latitude + "\nLongitude: " + longitude);
+
+                // Storing last location
+                if (first){
+                    first = false;
+                    tempLat = latitude;
+                    tempLong = longitude;
+                    distanceTravelled = 0;
+                }
+                else{
+                    Location tempLocation = new Location("New York City");
+                    tempLocation.setLatitude(40.7128);
+                    tempLocation.setLongitude(-74.0060);
+                    distanceTravelled = tempLocation.distanceTo(location);
+                    //TODO: Formula to convert delta lat, long to distance and fix this
+                }
+
+
+                Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
 
                 /*
                  Display to Phone
@@ -120,16 +147,15 @@ public class MainActivity extends AppCompatActivity {
                 newYorkCity.setLatitude(40.7128);
                 newYorkCity.setLongitude(-74.0060);
 
-                addressView.setText((CharSequence) getAddy( latitude,longitude));
+                addressView.setText(getAddy(latitude, longitude));
 
 
                 // Calculating Distance to my house
-                distanceTo.setText("Distance to New York City: "+ location.distanceTo(newYorkCity));
-
-
+                distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
 
             }
+
             @Override
             public void onProviderEnabled(@NonNull String provider) {
 
@@ -145,12 +171,13 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
-
-
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
 
     }
+
+
+
 
     public String getAddy(double latitude, double longitude) {
         Geocoder geocoder;
@@ -176,8 +203,13 @@ public class MainActivity extends AppCompatActivity {
 
 
 // To Do List
-    //TODO: Register and deregister the location listener on rotating change
+    // Mandatory
     //TODO: Step 9
+    //TODO: check against rubric
+    //TODO: make it work first time
+    //TODO: Code if permission is denied
+
+    // Optional
     //TODO: clean up code
     //TODO: Make display neatly
-    //TODO: Add factor
+    //TODO: Add bonus factor
