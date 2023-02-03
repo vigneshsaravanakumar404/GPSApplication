@@ -28,15 +28,14 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     // Variables
-    TextView textView, addressView, distanceTo;
+    TextView textView, addressView, distanceTo, distanceTravveled;
     LocationManager locationManager;
     LocationListener locationListener;
     double tempLat, tempLong, distanceTravelled;
-    Location tempLocation;
-    boolean first = true;
+    boolean first,permissionChecks = true;
 
     // Suppressing Dumb Stuff Android Studios Does
-    @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast"})
+    @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast", "SetTextI18n"})
     @Override
 
 
@@ -48,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         textView = findViewById(R.id.textView);
         addressView = findViewById(R.id.addressView);
         distanceTo = findViewById(R.id.distanceTo);
+        distanceTravveled = findViewById(R.id.distanceTravveled);
 
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -56,82 +56,84 @@ public class MainActivity extends AppCompatActivity {
             //Boolean coarseLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
             if (fineLocationGranted != null && fineLocationGranted) {
                 Toast.makeText(this, "Thanks for permissions!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Grant Permissions in Settings to Use App", Toast.LENGTH_LONG).show();
-            }
-        });
-        locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
-
-
-        // Useless Code
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
-
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onLocationChanged(Location location) {
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
-
-                // Display Location to Phone
-                textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
-                Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-
-
-                // Display Address
-                addressView.setText("Address: " + getAddy(latitude, longitude));
-
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-        });
-
-
-
-
-        // Useful Code
-        locationListener = new LocationListener() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onLocationChanged(@NonNull Location location) {
-                // Get latitude and longitude and display it
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
-
-                // Storing last location
-                if (first){
-                    first = false;
-                    tempLat = latitude;
-                    tempLong = longitude;
-                    distanceTravelled = 0;
+                permissionChecks = true;
+                // Useless Code
+                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    return;
                 }
-                else{
-                    Location tempLocation = new Location("New York City");
-                    tempLocation.setLatitude(40.7128);
-                    tempLocation.setLongitude(-74.0060);
-                    distanceTravelled = tempLocation.distanceTo(location);
-                    //TODO: Formula to convert delta lat, long to distance and fix this
-                }
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
+
+                    @SuppressLint("SetTextI18n")
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+
+                        // Display Location to Phone
+                        textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+                        Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
 
 
-                Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
+                        // Display Address
+                        addressView.setText("Address: " + getAddy(latitude, longitude));
+
+
+                    }
+
+                    @Override
+                    public void onProviderDisabled(String provider) {
+
+                    }
+
+                    @Override
+                    public void onProviderEnabled(String provider) {
+
+                    }
+
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                    }
+                });
+
+
+                // Useful Code
+                locationListener = new LocationListener() {
+                    @SuppressLint("SetTextI18n")
+                    @Override
+                    public void onLocationChanged(@NonNull Location location) {
+                        // Get latitude and longitude and display it
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+
+                        // Storing last location
+                        if (first){
+                            first = false;
+                            tempLat = latitude;
+                            tempLong = longitude;
+                            distanceTravelled = 0;
+                        }
+                        else{
+                            Location tempLocation = new Location("New York City");
+                            tempLocation.setLatitude(tempLat);
+                            tempLocation.setLongitude(-tempLong);
+                            distanceTravelled += tempLocation.distanceTo(location);
+                            tempLat = latitude;
+                            tempLong = longitude;
+                            if (distanceTravelled > 0.1){
+                                distanceTravveled.setText("Distance Travelled; " + distanceTravelled);
+                            }
+                            else{
+                                distanceTravveled.setText("Distance Travelled: " + 0);
+                            }
+
+
+                            //TODO: Formula to convert delta lat, long to distance and fix this
+                        }
+
+
+                        Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
 
                 /*
                  Display to Phone
@@ -139,39 +141,181 @@ public class MainActivity extends AppCompatActivity {
                 toast.show();
                 */
 
-                textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+                        textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
 
 
-                // Display Address to phone
-                Location newYorkCity = new Location("New York City");
-                newYorkCity.setLatitude(40.7128);
-                newYorkCity.setLongitude(-74.0060);
+                        // Display Address to phone
+                        Location newYorkCity = new Location("New York City");
+                        newYorkCity.setLatitude(40.7128);
+                        newYorkCity.setLongitude(-74.0060);
 
-                addressView.setText(getAddy(latitude, longitude));
-
-
-                // Calculating Distance to my house
-                distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
+                        addressView.setText(getAddy(latitude, longitude));
 
 
+                        // Calculating Distance to my house
+                        distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
+
+
+                    }
+
+                    @Override
+                    public void onProviderEnabled(@NonNull String provider) {
+
+                    }
+
+                    @Override
+                    public void onProviderDisabled(@NonNull String provider) {
+
+                    }
+
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                    }
+                };
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+
+            } else {
+                Toast.makeText(this, "Grant Permissions in Settings to Use App", Toast.LENGTH_LONG).show();
+                textView.setText("NO PERMISSION");
+                addressView.setText("NO PERMISSION");
+                distanceTo.setText("NO PERMISSION");
+                distanceTravveled.setText("NO PERMISSION");
             }
+        });
+        locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
 
-            @Override
-            public void onProviderEnabled(@NonNull String provider) {
 
+        // Location Data
+        if (permissionChecks) // Already have permissions
+        {
+            // Useless Code
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
             }
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
 
-            @Override
-            public void onProviderDisabled(@NonNull String provider) {
+                @SuppressLint("SetTextI18n")
+                @Override
+                public void onLocationChanged(Location location) {
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
 
-            }
+                    // Display Location to Phone
+                    textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+                    Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
 
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
 
-            }
-        };
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+                    // Display Address
+                    addressView.setText("Address: " + getAddy(latitude, longitude));
+
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+            });
+
+
+            // Useful Code
+            locationListener = new LocationListener() {
+                @SuppressLint("SetTextI18n")
+                @Override
+                public void onLocationChanged(@NonNull Location location) {
+                    // Get latitude and longitude and display it
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
+
+                    // Storing last location
+                    if (first){
+                        first = false;
+                        tempLat = latitude;
+                        tempLong = longitude;
+                        distanceTravelled = 0;
+                    }
+                    else{
+                        Location tempLocation = new Location("New York City");
+                        tempLocation.setLatitude(tempLat);
+                        tempLocation.setLongitude(-tempLong);
+                        distanceTravelled += tempLocation.distanceTo(location);
+                        tempLat = latitude;
+                        tempLong = longitude;
+                        if (distanceTravelled > 0.1){
+                            distanceTravveled.setText("Distance Travelled; " + distanceTravelled);
+                        }
+                        else{
+                            distanceTravveled.setText("Distance Travelled: " + 0);
+                        }
+
+
+                        //TODO: Formula to convert delta lat, long to distance and fix this
+                    }
+
+
+                    Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
+
+                /*
+                 Display to Phone
+                 Toast toast = Toast.makeText(getApplicationContext(), "LOCATION CHANGED " + "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_SHORT);
+                toast.show();
+                */
+
+                    textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+
+
+                    // Display Address to phone
+                    Location newYorkCity = new Location("New York City");
+                    newYorkCity.setLatitude(40.7128);
+                    newYorkCity.setLongitude(-74.0060);
+
+                    addressView.setText(getAddy(latitude, longitude));
+
+
+                    // Calculating Distance to my house
+                    distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
+
+
+                }
+
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(@NonNull String provider) {
+
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+            };
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+        }
+        else{
+            textView.setText("NO PERMISSION");
+            addressView.setText("NO PERMISSION");
+            distanceTo.setText("NO PERMISSION");
+            distanceTravveled.setText("NO PERMISSION");
+
+        }
 
 
     }
@@ -204,10 +348,7 @@ public class MainActivity extends AppCompatActivity {
 
 // To Do List
     // Mandatory
-    //TODO: Step 9
     //TODO: check against rubric
-    //TODO: make it work first time
-    //TODO: Code if permission is denied
 
     // Optional
     //TODO: clean up code
