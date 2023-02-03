@@ -1,2 +1,2 @@
 # GPSApplication
-using GPS to calculate distance traveled
+Smpla app that uses GPS to calculate distance traveled
