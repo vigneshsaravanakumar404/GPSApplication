@@ -28,7 +28,7 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     // Variables
-    TextView textView, addressView, distanceTo, distanceTravveled;
+    TextView textView, addressView, distanceTo, distanceTraveledView;
     LocationManager locationManager;
     LocationListener locationListener;
     double tempLat, tempLong, distanceTravelled;
@@ -37,8 +37,6 @@ public class MainActivity extends AppCompatActivity {
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast", "SetTextI18n"})
     @Override
-
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -46,8 +44,8 @@ public class MainActivity extends AppCompatActivity {
         // Variables
         textView = findViewById(R.id.textView);
         addressView = findViewById(R.id.addressView);
-        distanceTo = findViewById(R.id.distanceTo);
-        distanceTravveled = findViewById(R.id.distanceTravveled);
+        distanceTo = findViewById(R.id.distanceToView);
+        distanceTraveledView = findViewById(R.id.distanceTraveledView);
 
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -122,10 +120,10 @@ public class MainActivity extends AppCompatActivity {
                             tempLat = latitude;
                             tempLong = longitude;
                             if (distanceTravelled > 0.1){
-                                distanceTravveled.setText("Distance Travelled; " + distanceTravelled);
+                                distanceTraveledView.setText("Distance Travelled; " + distanceTravelled);
                             }
                             else{
-                                distanceTravveled.setText("Distance Travelled: " + 0);
+                                distanceTraveledView.setText("Distance Travelled: " + 0);
                             }
 
 
@@ -181,11 +179,10 @@ public class MainActivity extends AppCompatActivity {
                 textView.setText("NO PERMISSION");
                 addressView.setText("NO PERMISSION");
                 distanceTo.setText("NO PERMISSION");
-                distanceTravveled.setText("NO PERMISSION");
+                distanceTraveledView.setText("NO PERMISSION");
             }
         });
         locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
-
 
         // Location Data
         if (permissionChecks) // Already have permissions
@@ -255,10 +252,10 @@ public class MainActivity extends AppCompatActivity {
                         tempLat = latitude;
                         tempLong = longitude;
                         if (distanceTravelled > 0.1){
-                            distanceTravveled.setText("Distance Travelled; " + distanceTravelled);
+                            distanceTraveledView.setText("Distance Travelled; " + distanceTravelled);
                         }
                         else{
-                            distanceTravveled.setText("Distance Travelled: " + 0);
+                            distanceTraveledView.setText("Distance Travelled: " + 0);
                         }
 
 
@@ -313,15 +310,10 @@ public class MainActivity extends AppCompatActivity {
             textView.setText("NO PERMISSION");
             addressView.setText("NO PERMISSION");
             distanceTo.setText("NO PERMISSION");
-            distanceTravveled.setText("NO PERMISSION");
+            distanceTraveledView.setText("NO PERMISSION");
 
         }
-
-
     }
-
-
-
 
     public String getAddy(double latitude, double longitude) {
         Geocoder geocoder;
@@ -344,7 +336,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-
 
 // To Do List
     // Mandatory
