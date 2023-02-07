@@ -4,11 +4,12 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,21 +19,22 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import android.location.Address;
-import android.location.Geocoder;
-
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Variables
-    TextView textView, addressView, distanceTo, distanceTraveledView;
+    private static final DecimalFormat dfTwoPlaces = new DecimalFormat("0.00");
     LocationManager locationManager;
     LocationListener locationListener;
-    double tempLat, tempLong, distanceTravelled;
-    boolean first,permissionChecks = true;
+    private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
+    // Variables
+    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView;
+    double distanceTravelled;
+    boolean permissionChecks = true;
+    Location oldLocation;
 
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast", "SetTextI18n"})
@@ -42,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Variables
-        textView = findViewById(R.id.textView);
+        longitudes = findViewById(R.id.longitude);
+        latitudes = findViewById(R.id.latitude);
         addressView = findViewById(R.id.addressView);
         distanceTo = findViewById(R.id.distanceToView);
         distanceTraveledView = findViewById(R.id.distanceTraveledView);
@@ -55,48 +58,12 @@ public class MainActivity extends AppCompatActivity {
             if (fineLocationGranted != null && fineLocationGranted) {
                 Toast.makeText(this, "Thanks for permissions!", Toast.LENGTH_SHORT).show();
                 permissionChecks = true;
+
                 // Useless Code
                 locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return;
                 }
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
-
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onLocationChanged(Location location) {
-                        double latitude = location.getLatitude();
-                        double longitude = location.getLongitude();
-
-                        // Display Location to Phone
-                        textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
-                        Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-
-
-                        // Display Address
-                        addressView.setText("Address: " + getAddy(latitude, longitude));
-
-
-                    }
-
-                    @Override
-                    public void onProviderDisabled(String provider) {
-
-                    }
-
-                    @Override
-                    public void onProviderEnabled(String provider) {
-
-                    }
-
-                    @Override
-                    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-                    }
-                });
-
-
-                // Useful Code
                 locationListener = new LocationListener() {
                     @SuppressLint("SetTextI18n")
                     @Override
@@ -106,40 +73,16 @@ public class MainActivity extends AppCompatActivity {
                         double longitude = location.getLongitude();
 
                         // Storing last location
-                        if (first){
-                            first = false;
-                            tempLat = latitude;
-                            tempLong = longitude;
+                        if (oldLocation == null) {
                             distanceTravelled = 0;
+                        } else {
+                            distanceTravelled += location.distanceTo(oldLocation);
                         }
-                        else{
-                            Location tempLocation = new Location("New York City");
-                            tempLocation.setLatitude(tempLat);
-                            tempLocation.setLongitude(-tempLong);
-                            distanceTravelled += tempLocation.distanceTo(location);
-                            tempLat = latitude;
-                            tempLong = longitude;
-                            if (distanceTravelled > 0.1){
-                                distanceTraveledView.setText("Distance Travelled; " + distanceTravelled);
-                            }
-                            else{
-                                distanceTraveledView.setText("Distance Travelled: " + 0);
-                            }
+                        oldLocation = location;
+                        distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
 
-
-                            //TODO: Formula to convert delta lat, long to distance and fix this
-                        }
-
-
-                        Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-
-                /*
-                 Display to Phone
-                 Toast toast = Toast.makeText(getApplicationContext(), "LOCATION CHANGED " + "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_SHORT);
-                toast.show();
-                */
-
-                        textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+                        latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
+                        longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
 
 
                         // Display Address to phone
@@ -171,12 +114,12 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 };
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
 
             } else {
                 Toast.makeText(this, "Grant Permissions in Settings to Use App", Toast.LENGTH_LONG).show();
-                textView.setText("NO PERMISSION");
+                latitudes.setText("NO PERMISSION");
+                longitudes.setText("NO PERMISSION");
                 addressView.setText("NO PERMISSION");
                 distanceTo.setText("NO PERMISSION");
                 distanceTraveledView.setText("NO PERMISSION");
@@ -192,43 +135,6 @@ public class MainActivity extends AppCompatActivity {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
-
-                @SuppressLint("SetTextI18n")
-                @Override
-                public void onLocationChanged(Location location) {
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
-
-                    // Display Location to Phone
-                    textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
-                    Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-
-
-                    // Display Address
-                    addressView.setText("Address: " + getAddy(latitude, longitude));
-
-
-                }
-
-                @Override
-                public void onProviderDisabled(String provider) {
-
-                }
-
-                @Override
-                public void onProviderEnabled(String provider) {
-
-                }
-
-                @Override
-                public void onStatusChanged(String provider, int status, Bundle extras) {
-
-                }
-            });
-
-
-            // Useful Code
             locationListener = new LocationListener() {
                 @SuppressLint("SetTextI18n")
                 @Override
@@ -238,40 +144,16 @@ public class MainActivity extends AppCompatActivity {
                     double longitude = location.getLongitude();
 
                     // Storing last location
-                    if (first){
-                        first = false;
-                        tempLat = latitude;
-                        tempLong = longitude;
+                    if (oldLocation == null) {
                         distanceTravelled = 0;
+                    } else {
+                        distanceTravelled += location.distanceTo(oldLocation);
                     }
-                    else{
-                        Location tempLocation = new Location("New York City");
-                        tempLocation.setLatitude(tempLat);
-                        tempLocation.setLongitude(-tempLong);
-                        distanceTravelled += tempLocation.distanceTo(location);
-                        tempLat = latitude;
-                        tempLong = longitude;
-                        if (distanceTravelled > 0.1){
-                            distanceTraveledView.setText("Distance Travelled; " + distanceTravelled);
-                        }
-                        else{
-                            distanceTraveledView.setText("Distance Travelled: " + 0);
-                        }
+                    oldLocation = location;
+                    distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
 
-
-                        //TODO: Formula to convert delta lat, long to distance and fix this
-                    }
-
-
-                    Log.d("TAG", "Latitude: " + latitude + "\nLongitude: " + longitude);
-
-                /*
-                 Display to Phone
-                 Toast toast = Toast.makeText(getApplicationContext(), "LOCATION CHANGED " + "Latitude: " + latitude + "\nLongitude: " + longitude, Toast.LENGTH_SHORT);
-                toast.show();
-                */
-
-                    textView.setText("Latitude: " + latitude + " Longitude: " + longitude);
+                    latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
+                    longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
 
 
                     // Display Address to phone
@@ -305,9 +187,10 @@ public class MainActivity extends AppCompatActivity {
             };
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
-        }
-        else{
-            textView.setText("NO PERMISSION");
+
+        } else {
+            longitudes.setText("NO PERMISSION");
+            latitudes.setText("NO PERMISSION");
             addressView.setText("NO PERMISSION");
             distanceTo.setText("NO PERMISSION");
             distanceTraveledView.setText("NO PERMISSION");
@@ -338,10 +221,13 @@ public class MainActivity extends AppCompatActivity {
 }
 
 // To Do List
-    // Mandatory
-    //TODO: check against rubric
+// Mandatory
+//TODO: check against rubric
+//TODO: Place places visited in a listview with time spent at each location
+//TODO: Make app look good
+//TODO: Format address correctly
 
-    // Optional
-    //TODO: clean up code
-    //TODO: Make display neatly
-    //TODO: Add bonus factor
+// Optional
+//TODO: clean up code
+//TODO: Make display neatly
+//TODO: Add bonus factor
