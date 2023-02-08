@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,6 +22,7 @@ import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -30,11 +32,13 @@ public class MainActivity extends AppCompatActivity {
     LocationManager locationManager;
     LocationListener locationListener;
     private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
-    // Variables
-    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView;
-    double distanceTravelled;
+    ArrayList<String> addies = new ArrayList<>();
+    ArrayList<Double> times = new ArrayList<>();
+    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView, longest;
+    double distanceTravelled, startTime, endTime;
     boolean permissionChecks = true;
     Location oldLocation;
+    String lastAddress;
 
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast", "SetTextI18n"})
@@ -49,16 +53,13 @@ public class MainActivity extends AppCompatActivity {
         addressView = findViewById(R.id.addressView);
         distanceTo = findViewById(R.id.distanceToView);
         distanceTraveledView = findViewById(R.id.distanceTraveledView);
+        longest = findViewById(R.id.longest);
 
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
-            Boolean fineLocationGranted = result.getOrDefault(
-                    Manifest.permission.ACCESS_FINE_LOCATION, false);
+            Boolean fineLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
             //Boolean coarseLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
             if (fineLocationGranted != null && fineLocationGranted) {
-                Toast.makeText(this, "Thanks for permissions!", Toast.LENGTH_SHORT).show();
-                permissionChecks = true;
-
                 // Useless Code
                 locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -71,19 +72,26 @@ public class MainActivity extends AppCompatActivity {
                         // Get latitude and longitude and display it
                         double latitude = location.getLatitude();
                         double longitude = location.getLongitude();
+                        String address = getAddy(latitude, longitude);
 
                         // Storing last location
                         if (oldLocation == null) {
                             distanceTravelled = 0;
                         } else {
                             distanceTravelled += location.distanceTo(oldLocation);
+                            if (addies.isEmpty() || !lastAddress.equals(addies.get(addies.size() - 1))) {
+                                endTime = (System.currentTimeMillis());
+                                times.add((endTime - startTime) / 1000);
+                                startTime = (System.currentTimeMillis());
+                                addies.add(lastAddress);
+                            }
                         }
                         oldLocation = location;
+                        lastAddress = address;
                         distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
 
                         latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
                         longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
-
 
                         // Display Address to phone
                         Location newYorkCity = new Location("New York City");
@@ -92,10 +100,26 @@ public class MainActivity extends AppCompatActivity {
 
                         addressView.setText(getAddy(latitude, longitude));
 
-
                         // Calculating Distance to my house
                         distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
+                        // Favorite place
+                        int maxTimeIndex = 0;
+                        Double maxTime = 0.0;
+                        for (int x = 0; x < times.size(); x++) {
+                            if (times.get(x) > maxTime) {
+                                maxTimeIndex = x;
+                                maxTime = times.get(x);
+                            }
+                        }
+                        String fav = "";
+                        try {
+                            fav = addies.get(maxTimeIndex);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        longest.setText("Longest: " + fav + "\n" + ((times.size() > 0) ? (maxTime) : "") + " s");
+                        Log.d("TAG", "Longest: " + fav + "\n" + ((times.size() > 0) ? (maxTime) : "") + " s");
 
                     }
 
@@ -114,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 };
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
 
             } else {
@@ -142,14 +167,31 @@ public class MainActivity extends AppCompatActivity {
                     // Get latitude and longitude and display it
                     double latitude = location.getLatitude();
                     double longitude = location.getLongitude();
+                    String address = getAddy(latitude, longitude);
 
                     // Storing last location
                     if (oldLocation == null) {
                         distanceTravelled = 0;
+                        lastAddress = address;
+                        startTime = System.currentTimeMillis();
                     } else {
                         distanceTravelled += location.distanceTo(oldLocation);
+                        if (addies.isEmpty() || !lastAddress.equals(addies.get(addies.size() - 1))) {
+                            endTime = System.currentTimeMillis();
+                            long timeSpent = (long) (endTime - startTime);
+                            startTime = System.currentTimeMillis();
+
+                            int index = addies.indexOf(lastAddress);
+                            if (index != -1) {
+                                times.set(index, times.get(index) + timeSpent);
+                            } else {
+                                addies.add(lastAddress);
+                                times.add((double) timeSpent);
+                            }
+                        }
                     }
                     oldLocation = location;
+                    lastAddress = address;
                     distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
 
                     latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
@@ -167,6 +209,21 @@ public class MainActivity extends AppCompatActivity {
                     // Calculating Distance to my house
                     distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
+                    // Favorite place
+                    int maxTimeIndex = 0;
+                    for (int x = 0; x < times.size(); x++) {
+                        if (times.get(x) > times.get(maxTimeIndex)) {
+                            maxTimeIndex = x;
+                        }
+                    }
+                    String fav = "";
+                    try {
+                        fav = addies.get(maxTimeIndex);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    longest.setText("Longest: " + fav + "\n" + ((times.size() > 0) ? (times.get(maxTimeIndex) / 1000) : "") + " s");
+                    Log.d("TAG", "Longest: " + fav + "\n" + ((times.size() > 0) ? (times.get(maxTimeIndex) / 1000) : "") + " s");
 
                 }
 
