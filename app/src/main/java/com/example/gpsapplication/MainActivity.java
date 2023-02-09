@@ -10,7 +10,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,16 +28,22 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final DecimalFormat dfTwoPlaces = new DecimalFormat("0.00");
+    private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
+    double distanceTravelled;
+    boolean permissionChecks = true;
+
     LocationManager locationManager;
     LocationListener locationListener;
-    private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
-    ArrayList<String> addies = new ArrayList<>();
-    ArrayList<Double> times = new ArrayList<>();
-    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView, longest;
-    double distanceTravelled, startTime, endTime;
-    boolean permissionChecks = true;
+    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView;
     Location oldLocation;
     String lastAddress;
+
+    double starttime, endtime;
+    ArrayList<Double> times = new ArrayList<>();
+    ArrayList<String> addies = new ArrayList<>();
+    ArrayList<Location> locations = new ArrayList<>();
+    TextView longest;
+
 
     // Suppressing Dumb Stuff Android Studios Does
     @SuppressLint({"MissingPermission", "ServiceCast", "MissingInflatedId", "ServiceCast", "SetTextI18n"})
@@ -58,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
             Boolean fineLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
-            //Boolean coarseLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
             if (fineLocationGranted != null && fineLocationGranted) {
                 // Useless Code
                 locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -79,12 +83,7 @@ public class MainActivity extends AppCompatActivity {
                             distanceTravelled = 0;
                         } else {
                             distanceTravelled += location.distanceTo(oldLocation);
-                            if (addies.isEmpty() || !lastAddress.equals(addies.get(addies.size() - 1))) {
-                                endTime = (System.currentTimeMillis());
-                                times.add((endTime - startTime) / 1000);
-                                startTime = (System.currentTimeMillis());
-                                addies.add(lastAddress);
-                            }
+
                         }
                         oldLocation = location;
                         lastAddress = address;
@@ -93,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
                         latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
                         longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
 
+
                         // Display Address to phone
                         Location newYorkCity = new Location("New York City");
                         newYorkCity.setLatitude(40.7128);
@@ -100,26 +100,13 @@ public class MainActivity extends AppCompatActivity {
 
                         addressView.setText(getAddy(latitude, longitude));
 
+
                         // Calculating Distance to my house
                         distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
                         // Favorite place
-                        int maxTimeIndex = 0;
-                        Double maxTime = 0.0;
-                        for (int x = 0; x < times.size(); x++) {
-                            if (times.get(x) > maxTime) {
-                                maxTimeIndex = x;
-                                maxTime = times.get(x);
-                            }
-                        }
-                        String fav = "";
-                        try {
-                            fav = addies.get(maxTimeIndex);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        longest.setText("Longest: " + fav + "\n" + ((times.size() > 0) ? (maxTime) : "") + " s");
-                        Log.d("TAG", "Longest: " + fav + "\n" + ((times.size() > 0) ? (maxTime) : "") + " s");
+
+                        longest.setText("");
 
                     }
 
@@ -172,23 +159,9 @@ public class MainActivity extends AppCompatActivity {
                     // Storing last location
                     if (oldLocation == null) {
                         distanceTravelled = 0;
-                        lastAddress = address;
-                        startTime = System.currentTimeMillis();
                     } else {
                         distanceTravelled += location.distanceTo(oldLocation);
-                        if (addies.isEmpty() || !lastAddress.equals(addies.get(addies.size() - 1))) {
-                            endTime = System.currentTimeMillis();
-                            long timeSpent = (long) (endTime - startTime);
-                            startTime = System.currentTimeMillis();
 
-                            int index = addies.indexOf(lastAddress);
-                            if (index != -1) {
-                                times.set(index, times.get(index) + timeSpent);
-                            } else {
-                                addies.add(lastAddress);
-                                times.add((double) timeSpent);
-                            }
-                        }
                     }
                     oldLocation = location;
                     lastAddress = address;
@@ -210,20 +183,8 @@ public class MainActivity extends AppCompatActivity {
                     distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
                     // Favorite place
-                    int maxTimeIndex = 0;
-                    for (int x = 0; x < times.size(); x++) {
-                        if (times.get(x) > times.get(maxTimeIndex)) {
-                            maxTimeIndex = x;
-                        }
-                    }
-                    String fav = "";
-                    try {
-                        fav = addies.get(maxTimeIndex);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    longest.setText("Longest: " + fav + "\n" + ((times.size() > 0) ? (times.get(maxTimeIndex) / 1000) : "") + " s");
-                    Log.d("TAG", "Longest: " + fav + "\n" + ((times.size() > 0) ? (times.get(maxTimeIndex) / 1000) : "") + " s");
+
+                    longest.setText("");
 
                 }
 
@@ -285,6 +246,4 @@ public class MainActivity extends AppCompatActivity {
 //TODO: Format address correctly
 
 // Optional
-//TODO: clean up code
-//TODO: Make display neatly
 //TODO: Add bonus factor
