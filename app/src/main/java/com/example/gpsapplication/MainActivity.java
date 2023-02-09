@@ -29,14 +29,15 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final DecimalFormat dfTwoPlaces = new DecimalFormat("0.00");
+    private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
+    double distanceTravelled, startTime, endTime;
+    boolean permissionChecks = true;
+
     LocationManager locationManager;
     LocationListener locationListener;
-    private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
     ArrayList<String> addies = new ArrayList<>();
     ArrayList<Double> times = new ArrayList<>();
     TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView, longest;
-    double distanceTravelled, startTime, endTime;
-    boolean permissionChecks = true;
     Location oldLocation;
     String lastAddress;
 
@@ -169,6 +170,11 @@ public class MainActivity extends AppCompatActivity {
                     double longitude = location.getLongitude();
                     String address = getAddy(latitude, longitude);
 
+                    // Distance to NYC
+                    Location newYorkCity = new Location("New York City");
+                    newYorkCity.setLatitude(40.7128);
+                    newYorkCity.setLongitude(-74.0060);
+
                     // Storing last location
                     if (oldLocation == null) {
                         distanceTravelled = 0;
@@ -193,20 +199,9 @@ public class MainActivity extends AppCompatActivity {
                     oldLocation = location;
                     lastAddress = address;
                     distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
-
                     latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
                     longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
-
-
-                    // Display Address to phone
-                    Location newYorkCity = new Location("New York City");
-                    newYorkCity.setLatitude(40.7128);
-                    newYorkCity.setLongitude(-74.0060);
-
                     addressView.setText(getAddy(latitude, longitude));
-
-
-                    // Calculating Distance to my house
                     distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
                     // Favorite place
@@ -229,29 +224,23 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onProviderEnabled(@NonNull String provider) {
-
                 }
 
                 @Override
                 public void onProviderDisabled(@NonNull String provider) {
-
                 }
 
                 @Override
                 public void onStatusChanged(String provider, int status, Bundle extras) {
-
                 }
             };
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-
-
         } else {
             longitudes.setText("NO PERMISSION");
             latitudes.setText("NO PERMISSION");
             addressView.setText("NO PERMISSION");
             distanceTo.setText("NO PERMISSION");
             distanceTraveledView.setText("NO PERMISSION");
-
         }
     }
 
