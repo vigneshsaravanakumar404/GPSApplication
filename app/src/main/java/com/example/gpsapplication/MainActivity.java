@@ -27,22 +27,18 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final DecimalFormat dfZeroPlaces = new DecimalFormat("0");
     private static final DecimalFormat dfTwoPlaces = new DecimalFormat("0.00");
     private static final DecimalFormat dfEightPlaces = new DecimalFormat("0.00000000");
+
     double distanceTravelled;
-    boolean permissionChecks = true;
+    int currentPlaceIndex, maxIndex = -1;
 
     LocationManager locationManager;
     LocationListener locationListener;
-    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView;
+    TextView longitudes, latitudes, addressView, distanceTo, distanceTraveledView, longestAddress, longestTime;
     Location oldLocation;
-    String lastAddress;
-
-    double starttime, endtime;
-    ArrayList<Double> times = new ArrayList<>();
-    ArrayList<String> addies = new ArrayList<>();
-    ArrayList<Location> locations = new ArrayList<>();
-    TextView longest;
+    ArrayList<Place> places = new ArrayList<>();
 
 
     // Suppressing Dumb Stuff Android Studios Does
@@ -58,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
         addressView = findViewById(R.id.addressView);
         distanceTo = findViewById(R.id.distanceToView);
         distanceTraveledView = findViewById(R.id.distanceTraveledView);
-        longest = findViewById(R.id.longest);
+        longestAddress = findViewById(R.id.longest);
+        longestTime = findViewById(R.id.longestTime);
 
         // Request Location Permissions
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -69,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return;
                 }
+
+
                 locationListener = new LocationListener() {
                     @SuppressLint("SetTextI18n")
                     @Override
@@ -78,20 +77,34 @@ public class MainActivity extends AppCompatActivity {
                         double longitude = location.getLongitude();
                         String address = getAddy(latitude, longitude);
 
-                        // Storing last location
+                        // Calculations
+                        boolean isNewAddress = true;
                         if (oldLocation == null) {
                             distanceTravelled = 0;
+                            currentPlaceIndex = 0;
+                            places.add(new Place(address));
+                            places.get(0).setStartTime();
                         } else {
                             distanceTravelled += location.distanceTo(oldLocation);
-
+                            for (int i = 0; i < places.size(); i++) {
+                                if (places.get(i).getAddress().equals(address)) {
+                                    currentPlaceIndex = i;
+                                    isNewAddress = false;
+                                    break;
+                                }
+                            }
                         }
+                        if (isNewAddress) {
+                            places.add(new Place(address));
+                            currentPlaceIndex = places.size() - 1;
+                        }
+                        places.get(currentPlaceIndex).updateTime();
+
                         oldLocation = location;
-                        lastAddress = address;
                         distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
 
                         latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
                         longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
-
 
                         // Display Address to phone
                         Location newYorkCity = new Location("New York City");
@@ -100,14 +113,18 @@ public class MainActivity extends AppCompatActivity {
 
                         addressView.setText(getAddy(latitude, longitude));
 
-
                         // Calculating Distance to my house
                         distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
 
-                        // Favorite place
-
-                        longest.setText("");
-
+                        // Favorite place Code
+                        maxIndex = 0;
+                        for (int i = 0; i < places.size(); i++) {
+                            if (places.get(i).getTimeSpent() > places.get(maxIndex).getTimeSpent()) {
+                                maxIndex = i;
+                            }
+                        }
+                        longestAddress.setText("Location: " + places.get(maxIndex).getAddress());
+                        longestTime.setText("Time Spent: " + dfZeroPlaces.format(places.get(maxIndex).getTimeSpent() / 10000.0) + " Seconds");
                     }
 
                     @Override
@@ -125,6 +142,8 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 };
+
+
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
 
@@ -139,81 +158,6 @@ public class MainActivity extends AppCompatActivity {
         });
         locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
 
-        // Location Data
-        if (permissionChecks) // Already have permissions
-        {
-            // Useless Code
-            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            locationListener = new LocationListener() {
-                @SuppressLint("SetTextI18n")
-                @Override
-                public void onLocationChanged(@NonNull Location location) {
-                    // Get latitude and longitude and display it
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
-                    String address = getAddy(latitude, longitude);
-
-                    // Storing last location
-                    if (oldLocation == null) {
-                        distanceTravelled = 0;
-                    } else {
-                        distanceTravelled += location.distanceTo(oldLocation);
-
-                    }
-                    oldLocation = location;
-                    lastAddress = address;
-                    distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
-
-                    latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
-                    longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
-
-
-                    // Display Address to phone
-                    Location newYorkCity = new Location("New York City");
-                    newYorkCity.setLatitude(40.7128);
-                    newYorkCity.setLongitude(-74.0060);
-
-                    addressView.setText(getAddy(latitude, longitude));
-
-
-                    // Calculating Distance to my house
-                    distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
-
-                    // Favorite place
-
-                    longest.setText("");
-
-                }
-
-                @Override
-                public void onProviderEnabled(@NonNull String provider) {
-
-                }
-
-                @Override
-                public void onProviderDisabled(@NonNull String provider) {
-
-                }
-
-                @Override
-                public void onStatusChanged(String provider, int status, Bundle extras) {
-
-                }
-            };
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-
-
-        } else {
-            longitudes.setText("NO PERMISSION");
-            latitudes.setText("NO PERMISSION");
-            addressView.setText("NO PERMISSION");
-            distanceTo.setText("NO PERMISSION");
-            distanceTraveledView.setText("NO PERMISSION");
-
-        }
     }
 
     public String getAddy(double latitude, double longitude) {
@@ -236,14 +180,15 @@ public class MainActivity extends AppCompatActivity {
             return "";
         }
     }
+
+
 }
 
 // To Do List
 // Mandatory
-//TODO: check against rubric
-//TODO: Place places visited in a listview with time spent at each location
-//TODO: Make app look good
-//TODO: Format address correctly
+// TODO: Make app look good
+// TODO: Shorten address displayed
+// TODO: Create background thread to update time spent
 
 // Optional
-//TODO: Add bonus factor
+// TODO: Add bonus factor
