@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         longestAddress = findViewById(R.id.longest);
         longestTime = findViewById(R.id.longestTime);
 
-        // Request Location Permissions
+        // If permissions are granted then run app
         ActivityResultLauncher<String[]> locationPermissionRequest = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
             Boolean fineLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
             if (fineLocationGranted != null && fineLocationGranted) {
@@ -101,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                         places.get(currentPlaceIndex).updateTime();
 
                         oldLocation = location;
-                        distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 621.371192) + " Miles");
+                        distanceTraveledView.setText("Distance Travelled: " + dfTwoPlaces.format(distanceTravelled / 1609.0) + " Miles");
 
                         latitudes.setText("Latitude: " + dfEightPlaces.format(latitude));
                         longitudes.setText(" Longitude: " + dfEightPlaces.format(longitude));
@@ -112,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
                         newYorkCity.setLongitude(-74.0060);
 
                         addressView.setText(getAddy(latitude, longitude));
+                        Log.d("TAG123", getAddy(latitude, longitude));
 
                         // Calculating Distance to my house
                         distanceTo.setText("Distance to New York City: " + location.distanceTo(newYorkCity));
@@ -124,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                         longestAddress.setText("Location: " + places.get(maxIndex).getAddress());
-                        longestTime.setText("Time Spent: " + dfZeroPlaces.format(places.get(maxIndex).getTimeSpent() / 10000.0) + " Seconds");
+                        longestTime.setText("Time Spent: " + dfZeroPlaces.format(places.get(maxIndex).getTimeSpent() / 15000.0) + " Seconds");
                     }
 
                     @Override
@@ -154,9 +156,11 @@ public class MainActivity extends AppCompatActivity {
                 addressView.setText("NO PERMISSION");
                 distanceTo.setText("NO PERMISSION");
                 distanceTraveledView.setText("NO PERMISSION");
+
             }
         });
         locationPermissionRequest.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION});
+
 
     }
 
@@ -180,7 +184,6 @@ public class MainActivity extends AppCompatActivity {
             return "";
         }
     }
-
 
 }
 
